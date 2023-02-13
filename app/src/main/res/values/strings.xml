@@ -3,4 +3,6 @@
     <string name="action_settings">Settings</string>
     <string name="sample_server_service_uuid">caecface-e1d9-11e6-bf01-fe55135034f0</string>
     <string name="sample_server_characteristic_uuid">caec2ebc-e1d9-11e6-bf01-fe55135034f1</string>
+    <string name="demo_server_service_uuid">5c593f65-cee2-4696-add4-09cbb8b5480b</string>
+    <string name="demo_server_characteristic_uuid">c39b773a-847b-4129-9bb9-aaa9d494995a</string>
 </resources>

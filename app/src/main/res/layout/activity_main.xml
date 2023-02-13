@@ -22,10 +22,22 @@
             android:visibility="invisible" />
 
         <Button
-            android:id="@+id/trigger_cast"
+            android:id="@+id/trigger_cast_type_mssample"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Trigger Cast" />
+            android:text="Cast to MS-Sample Server" />
+
+        <Button
+            android:id="@+id/trigger_cast_type_demo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cast to Demo Server" />
+
+        <Button
+            android:id="@+id/trigger_cast_benchmark"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Benchmark - Cast to Demo Server" />
 
         <ProgressBar
             android:id="@+id/progressBar"

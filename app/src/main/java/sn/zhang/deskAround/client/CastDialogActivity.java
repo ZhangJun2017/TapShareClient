@@ -17,12 +17,17 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelUuid;
+import android.text.Editable;
+import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,16 +69,22 @@ public class CastDialogActivity extends AppCompatActivity {
             switch (intent.getAction()) {
                 case Messager.ACTION_TARGET_CONNECTED:
                     updateStatus("正在投送到 " + manager.deviceName);
-                    manager.cast(2);
+                    manager.cast();
                     break;
                 case Messager.ACTION_CAST_DONE:
                     updateStatus("已投送到 " + manager.deviceName);
                     endProcessTime = System.currentTimeMillis();
-                    Toast.makeText(getApplicationContext(), "cast finished  in " + (endProcessTime - startProcessTime), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "cast finished in " + (endProcessTime - startProcessTime), Toast.LENGTH_SHORT).show();
                     new Handler().postDelayed(() -> finish(), 1500);
                     break;
                 case Messager.ACTION_CAST_FAILED:
                     updateStatus("投送失败：" + intent.getStringExtra(Messager.EXTRA_DATA));
+                    break;
+                case Messager.ACTION_CONTENT_PREPARATION_REQUIRED:
+                    prepareCastContent();
+                    break;
+                case Messager.ACTION_CONTENT_PREPARATION_FINISHED:
+                    manager.cast();
                     break;
             }
         }
@@ -110,14 +121,40 @@ public class CastDialogActivity extends AppCompatActivity {
         castingTextView.setText(text);
     }
 
+    private void prepareCastContent(String content) {
+        manager.content = content;
+        manager.isPrepared = true;
+        Messager.announce(this, Messager.ACTION_CONTENT_PREPARATION_FINISHED);
+    }
+
+    private void prepareCastContent() {
+        setTheme(R.style.Theme_TapShareClient);
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this);
+        bottomSheetDialog.setContentView(R.layout.sheet_fill_demo_cast_message);
+        bottomSheetDialog.show();
+        bottomSheetDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        bottomSheetDialog.findViewById(R.id.continue_cast_button).setOnClickListener(view1 -> {
+            Editable message = ((TextInputEditText) bottomSheetDialog.findViewById(R.id.demo_cast_message_edittext)).getText();
+            if (message != null && message.length() != 0) {
+                manager.content = message.toString();
+            }
+            manager.isPrepared = true;
+            Messager.announce(this, Messager.ACTION_CONTENT_PREPARATION_FINISHED);
+            bottomSheetDialog.dismiss();
+        });
+    }
+
     private void castByIntent(Intent intent) {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-            updateStatus("以蓝牙投送需要授予权限");
-            pendingCastIntent = intent;
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_SCAN}, 0);
-            return;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                updateStatus("以蓝牙投送需要授予权限");
+                pendingCastIntent = intent;
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_SCAN}, 0);
+                return;
+            }
         }
-        manager = new CastEndpointManager(this, intent.getData().getHost(), intent.getData().getLastPathSegment());
+        //manager = new CastEndpointManager(this, intent.getData().getHost(), intent.getData().getLastPathSegment());
+        manager = new CastEndpointManager(this, intent.getData());
         bluetoothAdapter = getSystemService(BluetoothManager.class).getAdapter();
         if (bluetoothAdapter == null) {
             updateStatus("bluetoothAdapter is null!");
@@ -145,11 +182,13 @@ public class CastDialogActivity extends AppCompatActivity {
     }
 
     private void connectAndCast(BluetoothDevice device) {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            updateStatus("以蓝牙投送需要授予权限");
-            pendingCastDevice = device;
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_CONNECT}, 1);
-            return;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                updateStatus("以蓝牙投送需要授予权限");
+                pendingCastDevice = device;
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_CONNECT}, 1);
+                return;
+            }
         }
         updateStatus("准备投送到 " + device.getName());
         manager.connect(device).retry(3, 100).timeout(15000).useAutoConnect(true)

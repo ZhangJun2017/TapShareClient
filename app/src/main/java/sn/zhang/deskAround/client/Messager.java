@@ -8,6 +8,8 @@ public class Messager {
     public final static String ACTION_CAST_DONE = "sn.zhang.deskAround.ACTION_CAST_DONE";
     public final static String ACTION_CAST_FAILED = "sn.zhang.deskAround.ACTION_CAST_FAILED";
     public final static String ACTION_TARGET_CONNECTED = "sn.zhang.deskAround.ACTION_TARGET_CONNECTED";
+    public final static String ACTION_CONTENT_PREPARATION_REQUIRED = "sn.zhang.deskAround.ACTION_CONTENT_PREPARATION_REQUIRED";
+    public final static String ACTION_CONTENT_PREPARATION_FINISHED = "sn.zhang.deskAround.ACTION_CONTENT_PREPARATION_FINISHED";
     public final static String EXTRA_DATA = "sn.zhang.deskAround.EXTRA_DATA";
 
     public static void announce(Context context, String action) {
@@ -26,6 +28,8 @@ public class Messager {
         intentFilter.addAction(ACTION_CAST_DONE);
         intentFilter.addAction(ACTION_CAST_FAILED);
         intentFilter.addAction(ACTION_TARGET_CONNECTED);
+        intentFilter.addAction(ACTION_CONTENT_PREPARATION_REQUIRED);
+        intentFilter.addAction(ACTION_CONTENT_PREPARATION_FINISHED);
         return intentFilter;
     }
 }
