@@ -23,4 +23,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Continue" />
+
+    <Button
+        android:id="@+id/continue_cast_with_clipboard_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Use Clipboard"
+        android:visibility="gone" />
 </LinearLayout>

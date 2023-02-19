@@ -27,7 +27,7 @@ public class CastEndpointManager extends BleManager {
     public String deviceName;
     public Uri sourceUri;
     public final String castType;
-    public String content = "_(:з」∠)_";
+    public String content = "";
     public boolean isPrepared = true;
 
     public CastEndpointManager(@NonNull final Context context, String castTargetServiceUUID, String castTargetCharUUID) {
@@ -48,8 +48,14 @@ public class CastEndpointManager extends BleManager {
                 case "TYPE_MS_SAMPLE_REQUIRE_NUMBER":
                 case "TYPE_DEMO_REQUIRE_MESSAGE": {
                     isPrepared = false;
-                    new Handler().postDelayed(() -> Messager.announce(context, Messager.ACTION_CONTENT_PREPARATION_REQUIRED), 0);
+                    new Handler().postDelayed(() -> Messager.announce(context, Messager.ACTION_CONTENT_PREPARATION_REQUIRED_INTERNAL), 0);
                     //Messager.announce(context, Messager.ACTION_CONTENT_PREPARATION_REQUIRED);
+                    break;
+                }
+                case "TYPE_EXTERNAL_PROVIDER_PREFERRED": {
+                    isPrepared = false;
+                    new Handler().postDelayed(() -> Messager.announce(context, Messager.ACTION_CONTENT_PREPARATION_REQUIRED), 0);
+                    new Handler().postDelayed(() -> Messager.announce(context, Messager.ACTION_CONTENT_PREPARATION_REQUIRED_CLIPBOARD), 1000);
                     break;
                 }
             }
@@ -89,7 +95,8 @@ public class CastEndpointManager extends BleManager {
                     break;
                 }
                 case "TYPE_DEMO":
-                case "TYPE_DEMO_REQUIRE_MESSAGE": {
+                case "TYPE_DEMO_REQUIRE_MESSAGE":
+                case "TYPE_EXTERNAL_PROVIDER_PREFERRED": {
                     data = content.getBytes(StandardCharsets.UTF_8);
                     break;
                 }

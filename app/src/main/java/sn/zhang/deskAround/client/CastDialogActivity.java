@@ -11,14 +11,18 @@ import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelUuid;
 import android.text.Editable;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -68,7 +72,7 @@ public class CastDialogActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             switch (intent.getAction()) {
                 case Messager.ACTION_TARGET_CONNECTED:
-                    updateStatus("正在投送到 " + manager.deviceName);
+                    updateStatus(manager.isPrepared ? "正在投送到 " + manager.deviceName : "已连接到 " + manager.deviceName + "，正在准备内容...");
                     manager.cast();
                     break;
                 case Messager.ACTION_CAST_DONE:
@@ -80,11 +84,20 @@ public class CastDialogActivity extends AppCompatActivity {
                 case Messager.ACTION_CAST_FAILED:
                     updateStatus("投送失败：" + intent.getStringExtra(Messager.EXTRA_DATA));
                     break;
-                case Messager.ACTION_CONTENT_PREPARATION_REQUIRED:
-                    prepareCastContent();
+                case Messager.ACTION_CONTENT_PREPARATION_REQUIRED_INTERNAL:
+                    prepareCastContent(intent.hasExtra(Messager.EXTRA_DATA) ? intent.getStringExtra(Messager.EXTRA_DATA) : "");
+                    break;
+                case Messager.ACTION_CONTENT_PREPARATION_REQUIRED_CLIPBOARD:
+                    if (!manager.isPrepared) {
+                        prepareCastContentClipboard();
+                    }
                     break;
                 case Messager.ACTION_CONTENT_PREPARATION_FINISHED:
-                    manager.cast();
+                    if (!manager.isPrepared) {
+                        manager.content = intent.getStringExtra(Messager.EXTRA_DATA);
+                        manager.isPrepared = true;
+                        manager.cast();
+                    }
                     break;
             }
         }
@@ -121,25 +134,37 @@ public class CastDialogActivity extends AppCompatActivity {
         castingTextView.setText(text);
     }
 
-    private void prepareCastContent(String content) {
-        manager.content = content;
-        manager.isPrepared = true;
-        Messager.announce(this, Messager.ACTION_CONTENT_PREPARATION_FINISHED);
+    private void prepareCastContentClipboard() {
+        ClipboardManager clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboardManager != null && clipboardManager.hasPrimaryClip() && clipboardManager.getPrimaryClip().getItemCount() > 0 && clipboardManager.getPrimaryClip().getItemAt(0).getText().length() != 0) {
+            if (System.currentTimeMillis() - clipboardManager.getPrimaryClipDescription().getTimestamp() <= 120000) {
+                Messager.announce(this, Messager.ACTION_CONTENT_PREPARATION_FINISHED, clipboardManager.getPrimaryClip().getItemAt(0).getText().toString());
+            } else {
+                Messager.announce(this, Messager.ACTION_CONTENT_PREPARATION_REQUIRED_INTERNAL, clipboardManager.getPrimaryClip().getItemAt(0).getText().toString());
+            }
+        } else {
+            Messager.announce(this, Messager.ACTION_CONTENT_PREPARATION_REQUIRED_INTERNAL);
+        }
     }
 
-    private void prepareCastContent() {
+    private void prepareCastContent(String content) {
         setTheme(R.style.Theme_TapShareClient);
         BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this);
         bottomSheetDialog.setContentView(R.layout.sheet_fill_demo_cast_message);
         bottomSheetDialog.show();
         bottomSheetDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        if (!content.equals("")) {
+            Button continueCastWithClipboardButton = bottomSheetDialog.findViewById(R.id.continue_cast_with_clipboard_button);
+            continueCastWithClipboardButton.setVisibility(View.VISIBLE);
+            continueCastWithClipboardButton.setText("\"" + content + "\"");
+            continueCastWithClipboardButton.setOnClickListener(view1 -> {
+                Messager.announce(this, Messager.ACTION_CONTENT_PREPARATION_FINISHED, content);
+                bottomSheetDialog.dismiss();
+            });
+        }
         bottomSheetDialog.findViewById(R.id.continue_cast_button).setOnClickListener(view1 -> {
             Editable message = ((TextInputEditText) bottomSheetDialog.findViewById(R.id.demo_cast_message_edittext)).getText();
-            if (message != null && message.length() != 0) {
-                manager.content = message.toString();
-            }
-            manager.isPrepared = true;
-            Messager.announce(this, Messager.ACTION_CONTENT_PREPARATION_FINISHED);
+            Messager.announce(this, Messager.ACTION_CONTENT_PREPARATION_FINISHED, (message != null && message.length() != 0) ? message.toString() : "_(:з」∠)_");
             bottomSheetDialog.dismiss();
         });
     }
