@@ -55,7 +55,7 @@ public class CastEndpointManager extends BleManager {
                 case "TYPE_EXTERNAL_PROVIDER_PREFERRED": {
                     isPrepared = false;
                     new Handler().postDelayed(() -> Messager.announce(context, Messager.ACTION_CONTENT_PREPARATION_REQUIRED), 0);
-                    new Handler().postDelayed(() -> Messager.announce(context, Messager.ACTION_CONTENT_PREPARATION_REQUIRED_CLIPBOARD), 1000);
+                    new Handler().postDelayed(() -> Messager.announce(context, Messager.ACTION_CONTENT_PREPARATION_REQUIRED_CLIPBOARD), 500);
                     break;
                 }
             }
